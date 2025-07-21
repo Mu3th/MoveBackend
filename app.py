@@ -1,18 +1,18 @@
 import psycopg2
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify
+from dotenv import load_dotenv
 import os
 
+load_dotenv()
 app = Flask(__name__)
-
 def connect():
     return psycopg2.connect(
-                host  = os.environ.get('dbhost'),
-                # host = "dpg-cm0rbcmn7f5s73cavqo0-a", 
-                dbname = os.environ.get('dbname'), 
-                user = os.environ.get('dbuser'), 
-                password = os.environ.get('dbpassword'), 
-                port = os.environ.get('dbport'))
+                host = os.getenv("DBHOST"),
+                dbname = os.getenv("DBNAME"),
+                user = os.getenv("DBUSER"),
+                password = os.getenv("DBPASSWORD"),
+                port = os.getenv("DBPORT"))
 
 @app.route("/")
 def fuck():
