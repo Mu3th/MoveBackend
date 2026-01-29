@@ -1,0 +1,57 @@
+-- CREATE TABLE users (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     name TEXT NOT NULL,
+--     phone TEXT NOT NULL
+-- );
+
+-- CREATE TABLE orders (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     user_id INTEGER NOT NULL,
+--     product_name TEXT NOT NULL,
+--     price REAL NOT NULL,
+--     FOREIGN KEY(user_id) REFERENCES users(id)
+-- );
+-- DROP TABLE IF EXISTS drivers;
+-- CREATE TABLE drivers (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     name TEXT NOT NULL,
+--     phone TEXT NOT NULL,
+--     passengers_number TEXT NOT NULL,
+--     permit TEXT NOT NULL,
+--     status TEXT DEFAULT 'OOS' CHECK (status IN ('OOS', 'inQueue', 'onRoad')),
+--     from_complex TEXT,
+--     to_complex TEXT,
+--     timestamp DATETIME,
+--     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+-- );
+-- CREATE TABLE users_actions (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     passenger_name TEXT,
+--     passenger_phone TEXT,
+--     driver_phone TEXT NOT NULL,
+--     time DATETIME NOT NULL
+-- );
+-- DROP TABLE IF EXISTS driver_complexes;
+-- CREATE TABLE driver_complexes (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     driver_id INTEGER NOT NULL,
+--     complex_id INTEGER NOT NULL,
+--     UNIQUE(driver_id, complex_id),
+--     FOREIGN KEY (driver_id) REFERENCES drivers(id),
+--     FOREIGN KEY (complex_id) REFERENCES complexes(id)
+-- );
+
+-- CREATE TABLE complexes (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     name TEXT NOT NULL,
+--     lat REAL NOT NULL,
+--     long REAL NOT NULL
+-- );
+-- DELETE FROM complexes;
+-- INSERT INTO complexes (name, lat, long)
+-- VALUES
+--   ('نابلس - مجمع المدن الغربي', 32.22440,35.25820),
+--   ('نابلس - مجمع القرى الغربي', 32.22253,35.25691),  
+--   ('نابلس - المجمع الشرقي', 32.21855,35.26760),
+--   ('جنين - مجمع السينما', 32.46111,35.29824),
+--   ('جنين - مجمع القرى', 32.46405,35.29771);
