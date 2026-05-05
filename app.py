@@ -2,18 +2,7 @@ from datetime import datetime, time, timezone
 from flask import Flask, request, jsonify
 import os
 from database import get_db
-# import psycopg2
-# from dotenv import load_dotenv
-
-# load_dotenv()
 app = Flask(__name__)
-# def connect():
-#     return psycopg2.connect(
-#                 host = os.getenv("DBHOST"),
-#                 dbname = os.getenv("DBNAME"),
-#                 user = os.getenv("DBUSER"),
-#                 password = os.getenv("DBPASSWORD"),
-#                 port = os.getenv("DBPORT"))
 
 @app.route("/")
 def fuck():
@@ -47,7 +36,7 @@ def addComplex():
         name = data["name"]
         lat = data["lat"]
         long = data["long"]
-        cursor.execute('INSERT INTO complexes (name, lat, long) VALUES (?, ?, ?);', (name, lat, long))
+        cursor.execute('INSERT INTO complexes (name, lat, long) VALUES (%s, %s, %s);', (name, lat, long))
         return {"message": "Complex added successfully"}, 201
     except Exception as e :
         print(e)
@@ -85,14 +74,14 @@ def addDriver():
         permit = data["permit"]
         complexA = data["complexA"]
         complexB = data["complexB"]
-        cursor.execute("select * FROM drivers where permit = ?", (permit,))
+        cursor.execute("select * FROM drivers where permit = %s;", (permit,))
         result = cursor.fetchall()
         if result is not None and len(result) > 0:
             return jsonify({"message":"مجرى الخط موجود مسبقا"}), 200
-        cursor.execute('INSERT INTO drivers (name, phone, passengers_number, permit) VALUES (?, ?, ?, ?);', (driverName, driverPhone, passengerCount, permit))
-        driver_id = cursor.lastrowid
-        cursor.execute('INSERT INTO driver_complexes (driver_id, complex_id) VALUES (?, ?);', (driver_id, complexA))
-        cursor.execute('INSERT INTO driver_complexes (driver_id, complex_id) VALUES (?, ?);', (driver_id, complexB))
+        cursor.execute('INSERT INTO drivers (name, phone, passengers_number, permit) VALUES (%s, %s, %s, %s) RETURNING id;', (driverName, driverPhone, passengerCount, permit))
+        driver_id = cursor.fetchone()['id']
+        cursor.execute('INSERT INTO driver_complexes (driver_id, complex_id) VALUES (%s, %s);', (driver_id, complexA))
+        cursor.execute('INSERT INTO driver_complexes (driver_id, complex_id) VALUES (%s, %s);', (driver_id, complexB))
         return jsonify({
             "message": "Driver added successfully",
             "driver_id": driver_id,
@@ -116,7 +105,7 @@ def getDriverComplexes(permit):
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("select * from complexes where id in (select complex_id from driver_complexes where driver_id in (select id FROM drivers where permit = ?))", (permit,))
+        cursor.execute("select * from complexes where id in (select complex_id from driver_complexes where driver_id in (select id FROM drivers where permit = %s))", (permit,))
         return jsonify([dict(row) for row in cursor.fetchall()]), 200
     except Exception as e :
         print(e)
@@ -135,7 +124,7 @@ def getCars():
         fromComplex = request.args.get("from")
         toComplex = request.args.get("to")
         print(fromComplex, toComplex)
-        cursor.execute("select * from drivers where (status = 'inQueue' and from_complex like ? and to_complex like ?) or (status = 'onRoad' and from_complex like ? and to_complex like ?) order by status ASC, timestamp ASC", (fromComplex+'%', toComplex+'%', toComplex+'%', fromComplex+'%',))
+        cursor.execute("select * from drivers where (status = 'inQueue' and from_complex LIKE %s and to_complex LIKE %s) or (status = 'onRoad' and from_complex LIKE %s and to_complex LIKE %s) order by status ASC, timestamp ASC", (fromComplex + '%', toComplex + '%', toComplex + '%', fromComplex + '%'))
         result = cursor.fetchall()
         drivers = []
         for item in result:
@@ -168,7 +157,7 @@ def addUserAction():
         passengerPhone = data["passengerPhone"]
         driverPhone = data["driverPhone"]
         time = data["time"]
-        cursor.execute('INSERT INTO users_actions (passenger_name, passenger_phone, driver_phone, "time") VALUES (?, ?, ?, ?);', (passengerName, passengerPhone, driverPhone, time))
+        cursor.execute('INSERT INTO users_actions (passenger_name, passenger_phone, driver_phone, "time") VALUES (%s, %s, %s, %s);', (passengerName, passengerPhone, driverPhone, time))
         return {
             "message": "Passenger call added successfully",
             "passengerName": passengerName,
@@ -196,9 +185,9 @@ def changeDriverStatus():
         if(status == "inQueue"):
             fromComplex = data["fromComplex"]
             toComplex = data["toComplex"]
-            cursor.execute('update drivers set status = ?, timestamp = ?, from_complex = ?, to_complex = ? where permit = ?;', (status, timestamp, fromComplex, toComplex, permit,))
+            cursor.execute('update drivers set status = %s, timestamp = %s, from_complex = %s, to_complex = %s where permit = %s;', (status, timestamp, fromComplex, toComplex, permit))
         else:
-            cursor.execute('update drivers set status = ?, timestamp = ? where permit = ?;', (status, timestamp, permit))
+            cursor.execute('update drivers set status = %s, timestamp = %s where permit = %s;', (status, timestamp, permit))
         return {
             "message": "Driver status updated successfully",
             "permit": permit,
