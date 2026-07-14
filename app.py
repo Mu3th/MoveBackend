@@ -2,29 +2,31 @@ from datetime import datetime, time, timezone
 from flask import Flask, request, jsonify
 import os
 from database import get_db
+from flask_cors import CORS
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/")
 def fuck():
     return "FUCK !!!"
 
-@app.post("/execute_query")
-def executeQuery():
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        data = request.get_json()
-        # print(data)
-        query = data["query"]
-        cursor.execute(query)
-        return jsonify([dict(row) for row in cursor.fetchall()])
-    except Exception as e :
-        print(e)
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.commit()
-        cursor.close()
-        conn.close()
+# @app.post("/execute_query")
+# def executeQuery():
+#     try:
+#         conn = get_db()
+#         cursor = conn.cursor()
+#         data = request.get_json()
+#         # print(data)
+#         query = data["query"]
+#         cursor.execute(query)
+#         return jsonify([dict(row) for row in cursor.fetchall()])
+#     except Exception as e :
+#         print(e)
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         conn.commit()
+#         cursor.close()
+#         conn.close()
         
 @app.post("/complex")
 def addComplex():
@@ -123,19 +125,18 @@ def getCars():
         # data = request.get_json()
         fromComplex = request.args.get("from")
         toComplex = request.args.get("to")
-        print(fromComplex, toComplex)
-        cursor.execute("select * from drivers where (status = 'inQueue' and from_complex LIKE %s and to_complex LIKE %s) or (status = 'onRoad' and from_complex LIKE %s and to_complex LIKE %s) order by status ASC, timestamp ASC", (fromComplex + '%', toComplex + '%', toComplex + '%', fromComplex + '%'))
+        cursor.execute("""select * from drivers where (status = 'inQueue' and from_complex LIKE %s and to_complex LIKE %s) or (status = 'onRoad' and from_complex LIKE %s and to_complex LIKE %s) order by status ASC, "timestamp" ASC""", (fromComplex + '%', toComplex + '%', toComplex + '%', fromComplex + '%'))
         result = cursor.fetchall()
         drivers = []
         for item in result:
             driver = {
-                "id": item[0],
-                "driverName": item[1],
-                "phone": item[2],
-                "passengers": item[3],
-                "permit": item[4],
-                "status": item[5],
-                "ts": item[8],
+                "id": item["id"],
+                "driverName": item["name"],
+                "phone": item["phone"],
+                "passengers": item["passengers_number"],
+                "permit": item["permit"],
+                "status": item["status"],
+                "ts": int(item["timestamp"].timestamp() * 1000),
             }
             drivers.append(driver)
         return jsonify({"drivers": drivers}), 200
@@ -185,9 +186,9 @@ def changeDriverStatus():
         if(status == "inQueue"):
             fromComplex = data["fromComplex"]
             toComplex = data["toComplex"]
-            cursor.execute('update drivers set status = %s, timestamp = %s, from_complex = %s, to_complex = %s where permit = %s;', (status, timestamp, fromComplex, toComplex, permit))
+            cursor.execute('update drivers set status = %s, timestamp = TO_TIMESTAMP(%s / 1000.0) + INTERVAL \'3 hours\', from_complex = %s, to_complex = %s where permit = %s;', (status, timestamp, fromComplex, toComplex, permit))
         else:
-            cursor.execute('update drivers set status = %s, timestamp = %s where permit = %s;', (status, timestamp, permit))
+            cursor.execute('update drivers set status = %s, timestamp = TO_TIMESTAMP(%s / 1000.0) + INTERVAL \'3 hours\' where permit = %s;', (status, timestamp, permit))
         return {
             "message": "Driver status updated successfully",
             "permit": permit,
